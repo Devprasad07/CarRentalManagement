@@ -3,6 +3,7 @@
 @using CarRentalManagement.Domain
 @inject IDbContextFactory<CarRentalManagement.Data.CarRentalManagementContext> DbFactory
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
 
 <PageTitle>Edit</PageTitle>
 
@@ -42,22 +43,22 @@ else
                     <InputText id="emailaddress" @bind-Value="Customer.EmailAddress" class="form-control" />
                     <ValidationMessage For="() => Customer.EmailAddress" class="text-danger" />
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" hidden>
                     <label for="datacreated" class="form-label">DataCreated:</label>
-                    <InputDate id="datacreated" @bind-Value="Customer.DataCreated" class="form-control" />
+                    <InputDate id="datacreated" Type = "InputDateType.DateTimeLocal" @bind-Value="Customer.DataCreated" class="form-control" />
                     <ValidationMessage For="() => Customer.DataCreated" class="text-danger" />
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" hidden>
                     <label for="dateupdated" class="form-label">DateUpdated:</label>
                     <InputDate id="dateupdated" @bind-Value="Customer.DateUpdated" class="form-control" />
                     <ValidationMessage For="() => Customer.DateUpdated" class="text-danger" />
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" hidden>
                     <label for="createdby" class="form-label">CreatedBy:</label>
                     <InputText id="createdby" @bind-Value="Customer.CreatedBy" class="form-control" />
                     <ValidationMessage For="() => Customer.CreatedBy" class="text-danger" />
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" hidden>
                     <label for="updatedby" class="form-label">UpdatedBy:</label>
                     <InputText id="updatedby" @bind-Value="Customer.UpdatedBy" class="form-control" />
                     <ValidationMessage For="() => Customer.UpdatedBy" class="text-danger" />
@@ -79,9 +80,22 @@ else
     [SupplyParameterFromForm]
     private Customer? Customer { get; set; }
 
+    private string userId = "System";
+
     protected override async Task OnInitializedAsync()
     {
+
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        // Get the userId claim
+        var userIdClaim = user.FindFirst("userId");
+        if (userIdClaim != null)
+        {
+            userId = userIdClaim.Value;
+        }
         using var context = DbFactory.CreateDbContext();
+
+
         Customer ??= await context.Customer.FirstOrDefaultAsync(m => m.Id == Id);
 
         if (Customer is null)
@@ -95,6 +109,10 @@ else
     private async Task UpdateCustomer()
     {
         using var context = DbFactory.CreateDbContext();
+        // Set the userId to the UpdatedBy fields.
+        Customer.UpdatedBy = userId;
+        //Set the DateUpdated fields to the current date and time.
+        Customer.DateUpdated = DateTime.Now;
         context.Attach(Customer!).State = EntityState.Modified;
 
         try

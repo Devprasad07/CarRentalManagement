@@ -10,5 +10,7 @@
         public int VehicleId { get; set; }
 
         public int CustomerId { get; set; }
+
+        
     }
 }
